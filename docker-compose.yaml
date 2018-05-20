@@ -5,7 +5,7 @@ app_web:
     - 80:80
   links:
     - app:app
-    - static_web:static-web
+    - static_web:static_web
 
 app:
   build: ./app
