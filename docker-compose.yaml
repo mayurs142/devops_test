@@ -1,0 +1,14 @@
+app_web:
+  image: "app_web:final"
+  ports:
+    - 443:443
+    - 80:80
+  links:
+    - app:app
+    - static_web:static-web
+
+app:
+  image: "app:final"
+
+static_web:
+  image: "static_web:final"
