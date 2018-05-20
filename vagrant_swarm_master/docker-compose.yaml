@@ -1,0 +1,51 @@
+version: "3"
+
+services:
+  app_web:
+    image: mayurs142/devops_test:app_web
+    ports:
+      - 443:443
+      - 80:80
+    stdin_open: true
+    tty: true
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        parallelism: 2
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+    depends_on:
+      - app
+      - static_web
+
+  app:
+    image: mayurs142/devops_test:app
+    ports:
+      - 8080:8080
+    stdin_open: true
+    tty: true
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        parallelism: 2
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+
+  static_web:
+    image: mayurs142/devops_test:static_web
+    ports:
+      - 81:81
+    stdin_open: true
+    tty: true
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        parallelism: 2
+        delay: 10s
+      restart_policy:
+        condition: on-failure

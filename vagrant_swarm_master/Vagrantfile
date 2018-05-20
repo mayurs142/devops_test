@@ -1,0 +1,70 @@
+# encoding: utf-8
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+NODE_SCRIPT = <<EOF.freeze
+echo "Preparing swarm node..."
+
+# Install dependent packages
+yum install -y yum-utils device-mapper-persistent-data lvm2 epel-release
+
+# Setup docker repository
+yum-config-manager \
+    --add-repo \
+    https://download.docker.com/linux/centos/docker-ce.repo
+
+# Update Yum cache
+yum makecache fast
+
+# Install docker
+yum install -y docker-ce
+
+# Manage certificates
+openssl genrsa -passout pass:serverkeypass -out /etc/ssl/certs/server-key.pem 4096
+openssl req -subj '/CN=devops-test' -sha256 -new -key /etc/ssl/certs/server-key.pem -out /etc/ssl/certs/server.csr
+echo subjectAltName = IP:10.1.1.200,IP:127.0.0.1 > /etc/ssl/certs/extfile.cnf
+openssl x509 -passin pass:changeme -req -days 1000 -sha256 -in /etc/ssl/certs/server.csr -CA /vagrant/certs/ca.pem \
+  -CAkey /vagrant/certs/ca-key.pem -CAcreateserial -out /etc/ssl/certs/server-cert.pem -extfile /etc/ssl/certs/extfile.cnf
+
+
+# Managing docker daemon
+cp /vagrant/docker.service /usr/lib/systemd/system/docker.service
+systemctl start docker
+systemctl enable docker
+
+# Copy certs
+mkdir /root/.docker
+cp /vagrant/certs/ca.pem /root/.docker/
+cp /vagrant/certs/ca-key.pem /root/.docker/
+
+# Manage environment variables
+echo DOCKER_HOST=tcp://10.1.1.200:2376 >> /root/.bashrc
+echo DOCKER_TLS_VERIFY=1 >> /root/.bashrc
+
+# Initialize swarm
+docker swarm init --advertise-addr 10.1.1.200 | tee /vagrant/swarm_token
+
+# Deploy services
+docker stack deploy -c /vagrant/docker-compose.yaml devops_test
+
+EOF
+
+def set_hostname(server)
+  server.vm.provision 'shell', inline: "hostname #{server.vm.hostname}"
+end
+
+Vagrant.configure(2) do |config|
+  config.vm.define 'devops-test' do |d|
+    d.vm.box = 'geerlingguy/centos7'
+    d.vm.box_version = '1.2.5'
+    d.vm.hostname = 'devops-test'
+    d.vm.network 'private_network', ip: '10.1.1.200'
+    d.vm.provision :shell, inline: NODE_SCRIPT.dup
+    set_hostname(d)
+
+    d.vm.provider 'virtualbox' do |v|
+      v.memory = 4096
+      v.cpus = 4
+    end
+  end
+end

@@ -1,0 +1,7 @@
+# OS-specific
+.DS_Store
+
+# Vagrant stuff
+/.vagrant
+/vagrant_swarm_master/.vagrant
+vagrant_swarm_master/.vagrant
