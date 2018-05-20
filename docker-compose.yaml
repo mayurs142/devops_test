@@ -1,5 +1,5 @@
 app_web:
-  image: "app_web:final"
+  build: ./app_web
   ports:
     - 443:443
     - 80:80
@@ -8,7 +8,7 @@ app_web:
     - static_web:static-web
 
 app:
-  image: "app:final"
+  build: ./app
 
 static_web:
-  image: "static_web:final"
+  build: ./static_web
